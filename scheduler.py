@@ -9,6 +9,28 @@ USER_DATA_DIR = paths.USER_DATA_DIR
 CHAT_NAME = paths.CHAT_NAME
 #to fill
 MessagesList = paths.MESSAGES_LIST
+TARGET_TIME = paths.TARGET_TIME
+
+def find_and_click_contact(page, contact_name =CHAT_NAME):
+
+    print(f"Finding contact {contact_name}...")
+    search_bar = 'input[role="combobox"]'
+
+    page.wait_for_selector(search_bar)
+    page.click(search_bar)
+
+    print(f'typing contact name: {contact_name} in ')
+    page.keyboard.type(contact_name)
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(3000)
+
+    chat_selector = f'text="{contact_name}" >>nth = 1'
+    page.wait_for_selector(chat_selector)
+    page.click(chat_selector)
+    print(f"Chat chosen {CHAT_NAME}.")
+    page.wait_for_timeout(3000)
+
+
 
 def waitForCorrectTime():
     polish_tz = pytz.timezone("Europe/Warsaw")
@@ -16,7 +38,7 @@ def waitForCorrectTime():
     now = datetime.now(polish_tz)
 
     print("Current time is:", now)
-    target_time = now.replace(hour=22,minute=54,second=0,microsecond=0)
+    target_time = now.replace(hour=TARGET_TIME[0],minute=TARGET_TIME[1],second=TARGET_TIME[2],microsecond=0)
     if now > target_time:
         target_time += timedelta(days=1)
     wait_seconds = (target_time - now).total_seconds()
@@ -51,6 +73,7 @@ def send_message():
 
             page.goto("https://messenger.com", wait_until="domcontentloaded", timeout=1000000)
             chat_selector = f'text="{CHAT_NAME}"'
+            return find_and_click_contact(page)
             page.wait_for_selector(chat_selector)
             page.click(chat_selector)
             print(f"Chat chosen {CHAT_NAME}.")
@@ -58,6 +81,9 @@ def send_message():
 
             page.wait_for_selector(r'div[contenteditable="true"][role="textbox"]')
             page.click(r'div[contenteditable="true"][role="textbox"]')
+
+
+            #Send messages separately if needed
             for i in range(len(MessagesList)):
                 MESSAGE_TEXT = MessagesList[i]
                 print(f"sending msg: {MESSAGE_TEXT}")
@@ -82,4 +108,4 @@ def send_message():
             print("Script finished")
 
 if __name__ == "__main__":
-    waitForCorrectTime()
+    send_message()
