@@ -22,14 +22,22 @@ def find_and_click_contact(page, contact_name =CHAT_NAME):
     print(f'typing contact name: {contact_name} in ')
     page.keyboard.type(contact_name)
     page.keyboard.press("Enter")
-    page.wait_for_timeout(3000)
+    page.wait_for_timeout(5000)
 
-    chat_selector = f'text="{contact_name}" >>nth = 1'
+    #Quick solve with polish characters
+    polish_chars = set('ąćęłńóśźżĄĆĘŁŃÓŚŹŻ')
+    has_polish_chars = any(char in contact_name for char in polish_chars)
+    if has_polish_chars:
+        nth_index = 1
+    else:
+        nth_index = 0
+    chat_selector = f'text="{contact_name}">>nth={nth_index}'
     page.wait_for_selector(chat_selector)
     page.click(chat_selector)
     print(f"Chat chosen {CHAT_NAME}.")
-    page.wait_for_timeout(3000)
+    print(f"Loaded, title: {page.title()}")
 
+    page.wait_for_timeout(5000)
 
 
 def waitForCorrectTime():
