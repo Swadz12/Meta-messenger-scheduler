@@ -1,52 +1,68 @@
 import time
 import os
+from typing import Optional, List
+
+
 import paths
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 import pytz
 from datetime import datetime, timedelta
 
-USER_DATA_DIR = paths.USER_DATA_DIR
-CHAT_NAME = paths.CHAT_NAME
-#to fill
-MessagesList = paths.MESSAGES_LIST
-TARGET_TIME = paths.TARGET_TIME
+class Config:
+    def __init__(self, user_data_dir, chat_name, messages_list, target_time):
+        self.user_data_dir = user_data_dir
+        self.chat_name = chat_name
+        self.messages_list = messages_list
+        self.target_time = target_time
 
-def find_and_click_contact(page, contact_name =CHAT_NAME):
+config = Config("","", [], [])
 
+def run_script():
+    global config
+    config = Config(paths.USER_DATA_DIR, paths.CHAT_NAME, paths.MESSAGES_LIST, paths.TARGET_TIME)
+    waitForCorrectTime()
+
+def find_and_click_contact(page):
+
+    contact_name = config.chat_name
     print(f"Finding contact {contact_name}...")
     search_bar = 'input[role="combobox"]'
 
     page.wait_for_selector(search_bar)
+    page.wait_for_timeout(2000)
     page.click(search_bar)
 
     print(f'typing contact name: {contact_name} in ')
     page.keyboard.type(contact_name)
     page.keyboard.press("Enter")
-    page.wait_for_timeout(5000)
+    page.wait_for_selector(search_bar)
+    page.wait_for_timeout(2000)
 
     #Quick solve with polish characters
-    polish_chars = set('ąćęłńóśźżĄĆĘŁŃÓŚŹŻ')
-    has_polish_chars = any(char in contact_name for char in polish_chars)
-    if has_polish_chars:
-        nth_index = 1
-    else:
-        nth_index = 0
+    # polish_chars = set('ąćęłńóśźżĄĆĘŁŃÓŚŹŻ')
+    # has_polish_chars = any(char in contact_name for char in polish_chars)
+    # if has_polish_chars:
+    #     nth_index = 1
+    # else:
+    nth_index = 1
     chat_selector = f'text="{contact_name}">>nth={nth_index}'
     page.wait_for_selector(chat_selector)
+    page.wait_for_timeout(2000)
     page.click(chat_selector)
-    print(f"Chat chosen {CHAT_NAME}.")
+    print(f"Chat chosen {contact_name}.")
     print(f"Loaded, title: {page.title()}")
-
-    page.wait_for_timeout(5000)
-
-
 def waitForCorrectTime():
     polish_tz = pytz.timezone("Europe/Warsaw")
 
     now = datetime.now(polish_tz)
 
     print("Current time is:", now)
-    target_time = now.replace(hour=TARGET_TIME[0],minute=TARGET_TIME[1],second=TARGET_TIME[2],microsecond=0)
+    target_time = now.replace(
+        hour=config.target_time[0],
+        minute=config.target_time[1],
+        second=config.target_time[2],
+        microsecond=0
+    )
     if now > target_time:
         target_time += timedelta(days=1)
     wait_seconds = (target_time - now).total_seconds()
@@ -57,14 +73,14 @@ def waitForCorrectTime():
     send_message()
 
 def send_message():
-    print(f"Attempting to un chrome with profile: {USER_DATA_DIR}")
+    print(f"Attempting to un chrome with profile: {config.user_data_dir}")
 
     with sync_playwright() as p:
-        context = None
+        context = None # Initialize context to None so it can be always closed in finally block
         try:
             context = p.chromium.launch_persistent_context(
-                user_data_dir=USER_DATA_DIR,
-                headless=False,
+                user_data_dir=config.user_data_dir,
+                headless=True, # Set to True if you want to run in headless mode
                 channel="chrome",
                 args=[
                     '--start-maximized',
@@ -80,31 +96,31 @@ def send_message():
             print("Navigating to messenger")
 
             page.goto("https://messenger.com", wait_until="domcontentloaded", timeout=1000000)
-            chat_selector = f'text="{CHAT_NAME}"'
-            return find_and_click_contact(page)
-            page.wait_for_selector(chat_selector)
-            page.click(chat_selector)
-            print(f"Chat chosen {CHAT_NAME}.")
-            print(f"Loaded, title: {page.title()}")
+            #Somtimes it might be necessary to log in (only once, then cookies are saved),
+            #if situtation like this occur, run following line:
+            # page.wait_for_timeout(100000000)
+            #And log in manually, make sure to check "stay logged in" option and set headless = False (line 81)
+            find_and_click_contact(page)
 
             page.wait_for_selector(r'div[contenteditable="true"][role="textbox"]')
             page.click(r'div[contenteditable="true"][role="textbox"]')
-
-
+            page.wait_for_timeout(2000)
             #Send messages separately if needed
-            for i in range(len(MessagesList)):
-                MESSAGE_TEXT = MessagesList[i]
+
+            for i in range(len(config.messages_list)):
+                MESSAGE_TEXT = config.messages_list[i]
                 print(f"sending msg: {MESSAGE_TEXT}")
                 page.keyboard.type(MESSAGE_TEXT)
                 page.keyboard.press("Enter")
             sent_message_selector = f'div[role="row"]:has-text("{MESSAGE_TEXT}")'
             page.wait_for_selector(sent_message_selector, state="visible")
-            print(f"message '{MessagesList}' sent to {CHAT_NAME}.")
-            last_message = paths.MESSAGES_LIST[-1]
+
+            print(f"message '{config.messages_list}' sent to {config.chat_name}.")
+            last_message = config.messages_list[-1]
             page.wait_for_function(
                 f'document.body.textContent.includes("{last_message}")'
             )
-            page.wait_for_timeout(5000)
+            page.wait_for_timeout(2000)
 
         except PlaywrightTimeoutError as pe:
             print(f"Timeout : {pe}")
@@ -116,4 +132,4 @@ def send_message():
             print("Script finished")
 
 if __name__ == "__main__":
-    send_message()
+    run_script()
