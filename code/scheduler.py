@@ -51,7 +51,6 @@ def find_and_click_contact(page):
     page.wait_for_timeout(2000)
     page.click(chat_selector)
     print(f"Chat chosen {contact_name}.")
-    print(f"Loaded, title: {page.title()}")
 def waitForCorrectTime(headless):
     polish_tz = pytz.timezone("Europe/Warsaw")
 
