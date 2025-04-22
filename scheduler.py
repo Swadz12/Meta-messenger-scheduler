@@ -1,8 +1,6 @@
 import time
 import os
 from typing import Optional, List
-
-
 import paths
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 import pytz
@@ -17,19 +15,24 @@ class Config:
 
 config = Config("","", [], [])
 
-def run_script():
+def run_script(debug_mode):
     global config
+    if not paths.cookies_path_exists():
+        paths.set_cookies_path()
+    paths.USER_DATA_DIR = paths.get_cookies_path()
+
     config = Config(paths.USER_DATA_DIR, paths.CHAT_NAME, paths.MESSAGES_LIST, paths.TARGET_TIME)
-    waitForCorrectTime()
+    waitForCorrectTime(debug_mode)
 
 def find_and_click_contact(page):
 
+    page.wait_for_timeout(1000)
     contact_name = config.chat_name
     print(f"Finding contact {contact_name}...")
     search_bar = 'input[role="combobox"]'
+    page.wait_for_timeout(1000)
 
     page.wait_for_selector(search_bar)
-    page.wait_for_timeout(2000)
     page.click(search_bar)
 
     print(f'typing contact name: {contact_name} in ')
@@ -51,7 +54,7 @@ def find_and_click_contact(page):
     page.click(chat_selector)
     print(f"Chat chosen {contact_name}.")
     print(f"Loaded, title: {page.title()}")
-def waitForCorrectTime():
+def waitForCorrectTime(headless):
     polish_tz = pytz.timezone("Europe/Warsaw")
 
     now = datetime.now(polish_tz)
@@ -70,9 +73,9 @@ def waitForCorrectTime():
     time.sleep(wait_seconds)
 
     print(f"Current time is {datetime.now(polish_tz)}. Proceeding to send message.")
-    send_message()
+    send_message(headless)
 
-def send_message():
+def send_message(headless):
     print(f"Attempting to un chrome with profile: {config.user_data_dir}")
 
     with sync_playwright() as p:
@@ -80,7 +83,7 @@ def send_message():
         try:
             context = p.chromium.launch_persistent_context(
                 user_data_dir=config.user_data_dir,
-                headless=True, # Set to True if you want to run in headless mode
+                headless=headless, # Set to True if you want to run in headless mode
                 channel="chrome",
                 args=[
                     '--start-maximized',
@@ -98,8 +101,8 @@ def send_message():
             page.goto("https://messenger.com", wait_until="domcontentloaded", timeout=1000000)
             #Somtimes it might be necessary to log in (only once, then cookies are saved),
             #if situtation like this occur, run following line:
-            # page.wait_for_timeout(100000000)
-            #And log in manually, make sure to check "stay logged in" option and set headless = False (line 81)
+            if not headless:
+                page.wait_for_timeout(100000000) #time to log in manually
             find_and_click_contact(page)
 
             page.wait_for_selector(r'div[contenteditable="true"][role="textbox"]')
@@ -130,6 +133,3 @@ def send_message():
             # input("enter to close:")
             context.close()
             print("Script finished")
-
-if __name__ == "__main__":
-    run_script()
