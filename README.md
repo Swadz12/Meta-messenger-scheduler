@@ -28,58 +28,24 @@ pip install -r reqs.txt
 
 # Install Playwright browsers
 playwright install chromium
+
+# Enter runnable directory to access CLI
+cd runnable
+scheduler.bat
+
 ```
 
-## Config
-
-Edit `paths.py` to change default settings:
-
-```python
-USER_DATA_DIR = r'C:\Users\username\AppData\Local\Google\Chrome\User Data\Default'
-CHAT_NAME = 'Contact Name'
-MESSAGES_LIST = ['Example message']
-TARGET_TIME = [17, 25, 0]  # hour, minute, second
-```
-
-## Usage
-
-### Basic Execution
-
-```bash
-python main.py --help 
-```
-
-### Example usage, after reading - -help note
-
-```bash
-python main.py 
---contact "John Doe" 
---messages "Message 1" "Message 2" 
---time 18 30 0 
---run
-```
-**I suggest to set Cookies path directly in your Python IDE before running**
-
-### Command Line Arguments
-
-- `--profile` - path to Chrome user profile (Cookies, suggested to hardcode)
-- `--contact` - contact name to search for
-- `--messages` - list of messages to send
-- `--time` - sending time [hour minute second]
-- `--run` - execute script immediately
 
 ## Troubleshooting
 
-### First Time Login
+### First Time Running
 
-For first-time use, you may need to login manually:
-1. Navigate to **paths.py** and manually change USER_DATA_DIR
-2. Navigate to ***scheduler.py***
-3. Change `headless=True` to `headless=False` in the `send_message()` function
-4. Uncomment the line `# page.wait_for_timeout(100000000)`
-5. Run the script and login manually
-6. Make sure to check the "Stay logged in" option
-
-### Issues with Special Characters
-
-If you experience issues with contacts having special characters in their names, uncomment the code related to Polish characters in the `find_and_click_contact()` function.
+For the first time use, you may need to login manually and add your Chrome profile path.
+This path will look somewhat like this:
+```bash
+C:\Users\--your name--\AppData\Local\Google\Chrome\User Data\Default
+```
+1. To add the Chrome profile path, run the CLI and select **Option 1**. Follow the on-screen instructions.
+2. Once the path is set, choose **Option 3** to log in to your Messenger account. Make sure to check the **"Remember me"** box so you won't need to log in again.
+3. Use **debug mode** only during the initial login process.
+4. After setup, you can start sending messages using **Option 2**.
