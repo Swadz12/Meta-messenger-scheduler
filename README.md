@@ -26,9 +26,6 @@ cd Meta-messenger-scheduler
 # Install dependencies
 pip install -r reqs.txt
 
-# Install Playwright browsers
-playwright install chromium
-
 # Enter runnable directory to access CLI
 cd runnable
 scheduler.bat
