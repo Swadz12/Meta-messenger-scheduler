@@ -38,19 +38,14 @@ def find_and_click_contact(page):
     page.keyboard.press("Enter")
     page.wait_for_selector(search_bar)
     page.wait_for_timeout(2000)
-
-    #Quick solve with polish characters
-    # polish_chars = set('ąćęłńóśźżĄĆĘŁŃÓŚŹŻ')
-    # has_polish_chars = any(char in contact_name for char in polish_chars)
-    # if has_polish_chars:
-    #     nth_index = 1
-    # else:
-    nth_index = 1
-    chat_selector = f'text="{contact_name}">>nth={nth_index}'
-    page.wait_for_selector(chat_selector)
-    page.wait_for_timeout(2000)
+    chat_selector = f'li[role="option"]:has(span:text-is("{contact_name}")) >> a'
+    # print(f"Waiting for selector: {chat_selector}")
+    page.wait_for_selector(chat_selector, state="visible")
+    page.wait_for_timeout(500)
+    # print(f"Clicking selector: {chat_selector}")
     page.click(chat_selector)
     print(f"Chat chosen {contact_name}.")
+
 def waitForCorrectTime(headless):
     polish_tz = pytz.timezone("Europe/Warsaw")
 
@@ -98,8 +93,8 @@ def send_message(headless):
             page.goto("https://messenger.com", wait_until="domcontentloaded", timeout=1000000)
             #Somtimes it might be necessary to log in (only once, then cookies are saved),
             #if situtation like this occur, run following line:
-            if not headless:
-                page.wait_for_timeout(100000000) #time to log in manually
+            # if not headless:
+            #     page.wait_for_timeout(100000000) #time to log in manually
             find_and_click_contact(page)
 
             page.wait_for_selector(r'div[contenteditable="true"][role="textbox"]')
