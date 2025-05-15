@@ -1,6 +1,7 @@
 import paths
 import scheduler
 
+
 def welcome_message():
     print("""
 =================================================
@@ -13,7 +14,7 @@ def show_menu():
     print("Choose option")
     print("1. Configure path to your Chrome profile")
     print("2. Run")
-    print("3. Run in debug mode (might be necessary when running for the first time)")
+    print("3. Run in debug mode (necessary when running for the first time)")
     print("4. Quit")
     print("Write 'abort' at any moment to start the configuration over")
 
@@ -108,7 +109,7 @@ def main():
             if not paths.cookies_path_exists():
                 print("Path to cookies not set. Please set it first.")
                 continue
-            handle_send_message(headless= False)
+            scheduler.debug_mode(headless = False)
         elif choice == '4':
             break
         else:

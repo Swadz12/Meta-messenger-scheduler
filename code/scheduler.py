@@ -13,14 +13,14 @@ class Config:
 
 config = Config("","", [], [])
 
-def run_script(debug_mode):
+def run_script(headless):
     global config
     if not paths.cookies_path_exists():
         paths.set_cookies_path()
     paths.USER_DATA_DIR = paths.get_cookies_path()
 
     config = Config(paths.USER_DATA_DIR, paths.CHAT_NAME, paths.MESSAGES_LIST, paths.TARGET_TIME)
-    waitForCorrectTime(debug_mode)
+    waitForCorrectTime(headless)
 
 def find_and_click_contact(page):
 
@@ -67,15 +67,48 @@ def waitForCorrectTime(headless):
     print(f"Current time is {datetime.now(polish_tz)}. Proceeding to send message.")
     send_message(headless)
 
+
+def debug_mode(headless):
+    print(f"Attempting to run chrome with debug mode")
+
+    with sync_playwright() as p:
+        context = None
+        try:
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=config.user_data_dir,
+                headless=headless,
+                channel="chrome",
+                args=[
+                    '--start-maximized',
+                    '--disable-blink-features=AutomationControlled'
+                ],
+            )
+            print("Chromium context opened.")
+            page = context.new_page()
+            page.set_extra_http_headers({
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
+            })
+            page.goto("https://messenger.com", wait_until="domcontentloaded", timeout=1000000)
+            page.wait_for_timeout(10000000)
+            print("Logged in successfully, closing...")
+
+        except PlaywrightTimeoutError as pe:
+            print(f"Timeout : {pe}")
+        finally:
+            if context:
+                context.close()
+                print("Browser context closed.")
+
+
 def send_message(headless):
     print(f"Attempting to un chrome with profile: {config.user_data_dir}")
 
     with sync_playwright() as p:
-        context = None # Initialize context to None so it can be always closed in finally block
+        context = None
         try:
             context = p.chromium.launch_persistent_context(
                 user_data_dir=config.user_data_dir,
-                headless=headless, # Set to True if you want to run in headless mode
+                headless=headless,
                 channel="chrome",
                 args=[
                     '--start-maximized',
@@ -91,10 +124,6 @@ def send_message(headless):
             print("Navigating to messenger")
 
             page.goto("https://messenger.com", wait_until="domcontentloaded", timeout=1000000)
-            #Somtimes it might be necessary to log in (only once, then cookies are saved),
-            #if situtation like this occur, run following line:
-            # if not headless:
-            #     page.wait_for_timeout(100000000) #time to log in manually
             find_and_click_contact(page)
 
             page.wait_for_selector(r'div[contenteditable="true"][role="textbox"]')
